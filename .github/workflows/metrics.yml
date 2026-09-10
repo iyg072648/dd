@@ -1,0 +1,37 @@
+name: Track Lead Time
+on:
+  pull_request:
+    types: [closed]
+jobs:
+  track-lead-time:
+    # PR이 병합되었을 때만 실행
+    if: github.event.pull_request.merged == true
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Calculate Lead Time
+        run: |
+          FIRST_COMMIT_TIME="${{ github.event.pull_request.created_at }}"
+          MERGE_TIME="${{ github.event.pull_request.merged_at }}"
+          # Mac(BSD date)과 Ubuntu(GNU date)의 date 명령어 차이 처리
+          if [[ "$RUNNER_OS" == "macOS" ]]; then
+            LEAD_TIME=$(($(date -j -f "%Y-%m-%dT%H:%M:%SZ" "$MERGE_TIME" +%s) - $(date -j -f "%Y-%m-%dT%H:%M:%SZ" "$FIRST_COMMIT_TIME" +%s)))
+          else
+            LEAD_TIME=$(($(date -d "$MERGE_TIME" +%s) - $(date -d "$FIRST_COMMIT_TIME" +%s)))
+          fi
+          echo "Lead Time on ${{ matrix.os }}: $LEAD_TIME seconds"
+
+  track-lead-time-centos:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    container: centos:7
+    steps:
+      - name: Calculate Lead Time
+        run: |
+          FIRST_COMMIT_TIME="${{ github.event.pull_request.created_at }}"
+          MERGE_TIME="${{ github.event.pull_request.merged_at }}"
+          # CentOS는 GNU date를 사용합니다.
+          LEAD_TIME=$(($(date -d "$MERGE_TIME" +%s) - $(date -d "$FIRST_COMMIT_TIME" +%s)))
+          echo "Lead Time on CentOS: $LEAD_TIME seconds"
