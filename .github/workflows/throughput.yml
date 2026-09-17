@@ -1,0 +1,12 @@
+name: Weekly Throughput
+on:
+  schedule:
+    - cron: '0 0 * * 0' # 매주 일요일 자정 실행
+jobs:
+  calculate-throughput:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get Closed Issues
+        run: |
+          CLOSED_ISSUES=$(gh issue list --state closed \
+            --json closedAt --jq 'length')
